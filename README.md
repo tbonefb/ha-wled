@@ -1,2 +1,2 @@
-# A Home Assistant Component to interface with WLED
+# WLED Home Assistant Integration
  
