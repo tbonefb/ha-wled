@@ -21,7 +21,6 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -217,7 +216,7 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
         """Return the color value."""
         return cast(
-            Tuple[int, int, int, int],
+            tuple[int, int, int, int],
             self.coordinator.data.state.segments[self._segment].color_primary,
         )
 
