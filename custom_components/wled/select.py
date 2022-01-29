@@ -185,7 +185,7 @@ class WLEDPaletteSelect(WLEDEntity, SelectEntity):
 class WLEDPrimaryColorSelect(WLEDEntity, SelectEntity):
     """Defines a WLED Primary Color select."""
 
-    _attr_entity_category = ENTITY_CATEGORY_CONFIG
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:palette-outline"
     _segment: int
 
@@ -241,7 +241,7 @@ class WLEDPrimaryColorSelect(WLEDEntity, SelectEntity):
 class WLEDSecondayColorSelect(WLEDEntity, SelectEntity):
     """Defines a WLED Seconday Color select."""
 
-    _attr_entity_category = ENTITY_CATEGORY_CONFIG
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:palette-outline"
     _segment: int
 
@@ -297,7 +297,7 @@ class WLEDSecondayColorSelect(WLEDEntity, SelectEntity):
 class WLEDTertiaryColorSelect(WLEDEntity, SelectEntity):
     """Defines a WLED Tertiary Color select."""
 
-    _attr_entity_category = ENTITY_CATEGORY_CONFIG
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:palette-outline"
     _segment: int
 
