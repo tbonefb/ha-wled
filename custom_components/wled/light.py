@@ -21,29 +21,19 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     ATTR_COLOR_PRIMARY,
     ATTR_COLOR_SECONDARY,
     ATTR_COLOR_TERTIARY,
-    ATTR_COLOR_NAME_PRIMARY,
-    ATTR_COLOR_NAME_SECONDARY,
-    ATTR_COLOR_NAME_TERTIARY,
     ATTR_ON,
     ATTR_SEGMENT_ID,
-    DOMAIN,
-    LOGGER,
-    SERVICE_COLORS,
-    COLOR_GROUP_PRIMARY,
-    COLOR_GROUP_SECONDARY,
-    COLOR_GROUP_TERTIARY,
+    DOMAIN
 )
 from .coordinator import WLEDDataUpdateCoordinator
 from .helpers import wled_exception_handler
 from .models import WLEDEntity
-from .color import color_name_to_rgb
 
 PARALLEL_UPDATES = 1
 
@@ -55,28 +45,6 @@ async def async_setup_entry(
 ) -> None:
     """Set up WLED light based on a config entry."""
     coordinator: WLEDDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-
-    platform = entity_platform.async_get_current_platform()
-
-    platform.async_register_entity_service(
-        SERVICE_COLORS,
-        {
-            vol.Exclusive(ATTR_COLOR_PRIMARY, COLOR_GROUP_PRIMARY): vol.All(
-                vol.ExactSequence((cv.byte,) * 3), vol.Coerce(tuple)
-            ),
-            vol.Exclusive(ATTR_COLOR_SECONDARY, COLOR_GROUP_SECONDARY): vol.All(
-                vol.ExactSequence((cv.byte,) * 3), vol.Coerce(tuple)
-            ),
-            vol.Exclusive(ATTR_COLOR_TERTIARY, COLOR_GROUP_TERTIARY): vol.All(
-                vol.ExactSequence((cv.byte,) * 3), vol.Coerce(tuple)
-            ),
-            vol.Exclusive(ATTR_COLOR_NAME_PRIMARY, COLOR_GROUP_PRIMARY): cv.string,
-            vol.Exclusive(ATTR_COLOR_NAME_SECONDARY, COLOR_GROUP_SECONDARY): cv.string,
-            vol.Exclusive(ATTR_COLOR_NAME_TERTIARY, COLOR_GROUP_TERTIARY): cv.string,
-        },
-        "async_colors",
-    )
-
     if coordinator.keep_master_light:
         async_add_entities([WLEDMasterLight(coordinator=coordinator)])
 
@@ -142,18 +110,6 @@ class WLEDMasterLight(WLEDEntity, LightEntity):
             on=True, brightness=kwargs.get(ATTR_BRIGHTNESS), transition=transition
         )
 
-    async def async_colors(
-        self,
-        color_primary: None = None,
-        color_secondary: None = None,
-        color_tertiary: None = None,
-        color_name_primary: None = None,
-        color_name_secondary: None = None,
-        color_name_tertiary: None = None,
-    ) -> None:
-        """Set the colors of a WLED light."""
-        # Master light does not have an colors setting.
-
 
 class WLEDSegmentLight(WLEDEntity, LightEntity):
     """Defines a WLED light based on a segment."""
@@ -207,16 +163,6 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
             return False
 
         return super().available
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return the state attributes of the entity."""
-        segment = self.coordinator.data.state.segments[self._segment]
-        return {
-            ATTR_COLOR_PRIMARY: segment.color_primary,
-            ATTR_COLOR_SECONDARY: segment.color_secondary,
-            ATTR_COLOR_TERTIARY: segment.color_tertiary,
-        }
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
@@ -350,34 +296,6 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
             return
 
         await self.coordinator.wled.segment(**data)
-
-    @wled_exception_handler
-    async def async_colors(
-        self,
-        color_primary: tuple[int, int, int, int] | tuple[int, int, int] | None = None,
-        color_secondary: tuple[int, int, int, int] | tuple[int, int, int] | None = None,
-        color_tertiary: tuple[int, int, int, int] | tuple[int, int, int] | None = None,
-        color_name_primary: str | None = None,
-        color_name_secondary: str | None = None,
-        color_name_tertiary: str | None = None,
-    ) -> None:
-
-        if color_name_primary is not None:
-            color_primary = color_name_to_rgb(color_name_primary)
-
-        if color_name_secondary is not None:
-            color_secondary = color_name_to_rgb(color_name_secondary)
-
-        if color_name_tertiary is not None:
-            color_tertiary = color_name_to_rgb(color_name_tertiary)
-
-        """Set the colors of a WLED light."""
-        await self.coordinator.wled.segment(
-            segment_id=self._segment,
-            color_primary=color_primary,
-            color_secondary=color_secondary,
-            color_tertiary=color_tertiary,
-        )
 
 
 @callback
