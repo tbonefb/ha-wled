@@ -1,11 +1,11 @@
 {
   "domain": "wled",
-  "name": "WLED",
+  "name": "HA WLED",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/wled",
   "requirements": ["wled==0.13.0"],
   "zeroconf": ["_wled._tcp.local."],
-  "codeowners": ["@frenck"],
+  "codeowners": ["@frenck", "@tbonefb"],
   "quality_scale": "platinum",
   "iot_class": "local_push",
   "version": "0.3.0b1"
