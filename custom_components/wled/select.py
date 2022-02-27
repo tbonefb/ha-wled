@@ -15,6 +15,7 @@ from .const import DEVICE_CLASS_WLED_LIVE_OVERRIDE, DOMAIN
 from .coordinator import WLEDDataUpdateCoordinator
 from .helpers import wled_exception_handler
 from .models import WLEDEntity
+from .color import COLORS, color_name_to_rgb
 
 PARALLEL_UPDATES = 1
 
@@ -181,6 +182,86 @@ class WLEDPaletteSelect(WLEDEntity, SelectEntity):
         await self.coordinator.wled.segment(segment_id=self._segment, palette=option)
 
 
+class WLEDColorSelect(WLEDEntity, SelectEntity):
+    """Defines a WLED Color select."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:palette-outline"
+    _segment: int
+
+    def __init__(self, coordinator: WLEDDataUpdateCoordinator, segment: int, color_val: int) -> None:
+        """Initialize WLED ."""
+        super().__init__(coordinator=coordinator)
+
+        self._color_val = 0
+        self._color_val_name = "Primary"
+
+        if color_val == 2:
+            self._color_val = 2
+            self._color_val_name = "Tertiary"
+        elif color_val == 1:
+            self._color_val = 1
+            self._color_val_name = "Secondary"
+
+        # Segment 0 uses a simpler name, which is more natural for when using
+        # a single segment / using WLED with one big LED strip.
+        self._attr_name = (
+            f"{coordinator.data.info.name} Segment {segment} {self._color_val_name} Color"
+        )
+        if segment == 0:
+            self._attr_name = f"{coordinator.data.info.name} {self._color_val_name} Color"
+
+        self._attr_unique_id = f"{coordinator.data.info.mac_address}_{self._color_val_name.lower()}_color_{segment}"
+        self._attr_options = []
+        for color in COLORS:
+            self._attr_options.append(color)
+        self._attr_options.append("Custom")
+        self._segment = segment
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        try:
+            self.coordinator.data.state.segments[self._segment]
+        except IndexError:
+            return False
+
+        return super().available
+
+    @property
+    def current_option(self) -> str | None:
+        """Return the current selected color."""
+        for color in COLORS:
+            rgb_color_dict = COLORS[color]
+            r = int(self.coordinator.data.state.segments[self._segment].color_primary[0])
+            g = int(self.coordinator.data.state.segments[self._segment].color_primary[1])
+            b = int(self.coordinator.data.state.segments[self._segment].color_primary[2])
+
+            if self._color_val == 2:
+                r = int(self.coordinator.data.state.segments[self._segment].color_tertiary[0])
+                g = int(self.coordinator.data.state.segments[self._segment].color_tertiary[1])
+                b = int(self.coordinator.data.state.segments[self._segment].color_tertiary[2])
+            elif self._color_val == 1:
+                r = int(self.coordinator.data.state.segments[self._segment].color_secondary[0])
+                g = int(self.coordinator.data.state.segments[self._segment].color_secondary[1])
+                b = int(self.coordinator.data.state.segments[self._segment].color_secondary[2])
+
+            if rgb_color_dict.r == r and rgb_color_dict.g == g and rgb_color_dict.b == b:
+                return color
+        return "Custom"
+
+    @wled_exception_handler
+    async def async_select_option(self, option: str) -> None:
+        """Set WLED segment to the selected color."""
+        if option != "Custom":
+            rgb_color = color_name_to_rgb(option)
+            if self._color_val == 2:
+                await self.coordinator.wled.segment(segment_id=self._segment, color_tertiary=rgb_color)
+            elif self._color_val == 1:
+                await self.coordinator.wled.segment(segment_id=self._segment, color_secondary=rgb_color)
+            else:
+                await self.coordinator.wled.segment(segment_id=self._segment, color_primary=rgb_color)
+
 @callback
 def async_update_segments(
     coordinator: WLEDDataUpdateCoordinator,
@@ -196,6 +277,9 @@ def async_update_segments(
     for segment_id in segment_ids - current_ids:
         current_ids.add(segment_id)
         new_entities.append(WLEDPaletteSelect(coordinator, segment_id))
+        new_entities.append(WLEDColorSelect(coordinator, segment_id, 0))
+        new_entities.append(WLEDColorSelect(coordinator, segment_id, 1))
+        new_entities.append(WLEDColorSelect(coordinator, segment_id, 2))
 
     if new_entities:
         async_add_entities(new_entities)
