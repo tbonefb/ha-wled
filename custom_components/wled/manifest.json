@@ -1,6 +1,6 @@
 {
   "domain": "wled",
-  "name": "HA WLED",
+  "name": "WLED",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/wled",
   "requirements": ["wled==0.13.0"],
