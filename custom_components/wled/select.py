@@ -256,11 +256,11 @@ class WLEDColorSelect(WLEDEntity, SelectEntity):
         if option != "Custom":
             rgb_color = color_name_to_rgb(option)
             if self._color_val == 2:
-                await self.coordinator.wled.segment(segment_id=self._segment, color_tertiary=rgb_color)
+                await self.coordinator.wled.segment(segment_id=self._segment, color_tertiary=rgb_color[:3])
             elif self._color_val == 1:
-                await self.coordinator.wled.segment(segment_id=self._segment, color_secondary=rgb_color)
+                await self.coordinator.wled.segment(segment_id=self._segment, color_secondary=rgb_color[:3])
             else:
-                await self.coordinator.wled.segment(segment_id=self._segment, color_primary=rgb_color)
+                await self.coordinator.wled.segment(segment_id=self._segment, color_primary=rgb_color[:3])
 
 @callback
 def async_update_segments(
