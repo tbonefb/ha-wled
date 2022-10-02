@@ -93,13 +93,13 @@ class WLEDMasterLight(WLEDEntity, LightEntity):
 
     _attr_color_mode = ColorMode.BRIGHTNESS
     _attr_icon = "mdi:led-strip-variant"
+    _attr_name = "Master"
     _attr_supported_features = LightEntityFeature.TRANSITION
     _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
 
     def __init__(self, coordinator: WLEDDataUpdateCoordinator) -> None:
         """Initialize WLED master light."""
         super().__init__(coordinator=coordinator)
-        self._attr_name = f"{coordinator.data.info.name} Master"
         self._attr_unique_id = coordinator.data.info.mac_address
 
     @property
@@ -168,8 +168,6 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
         self._rgbw = coordinator.data.info.leds.rgbw
         self._wv = coordinator.data.info.leds.wv
         self._segment = segment
-        self._light_val = 0
-        self._light_val_name = "Primary"
 
         if light_val == 2:
             self._light_val = 2
@@ -177,12 +175,15 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
         elif light_val == 1:
             self._light_val = 1
             self._light_val_name = "Secondary"
+        else:
+            self._light_val = 0
+            self._light_val_name = "Primary"
 
         # Segment 0 uses a simpler name, which is more natural for when using
         # a single segment / using WLED with one big LED strip.
-        self._attr_name = f"{coordinator.data.info.name} Segment {segment} {self._light_val_name}"
-        if segment == 0:
-            self._attr_name = f"{coordinator.data.info.name} {self._light_val_name}"
+        self._attr_name = f"{self._light_val_name.lower()}"
+        if segment != 0:
+            self._attr_name = f"Segment {segment} {self._light_val_name.lower()}"
 
         self._attr_unique_id = (
             f"{self.coordinator.data.info.mac_address}_{self._segment}_{self._light_val_name.lower()}"
@@ -380,7 +381,7 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
 def async_update_segments(
     coordinator: WLEDDataUpdateCoordinator,
     current_ids: set[int],
-    async_add_entities,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Update segments."""
     segment_ids = {light.segment_id for light in coordinator.data.state.segments}
