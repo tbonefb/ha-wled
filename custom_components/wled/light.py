@@ -15,6 +15,7 @@ from homeassistant.components.light import (
     ColorMode,
     LightEntity,
     LightEntityFeature,
+    ENTITY_ID_FORMAT,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -181,9 +182,11 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
 
         # Segment 0 uses a simpler name, which is more natural for when using
         # a single segment / using WLED with one big LED strip.
-        self._attr_name = f"{self._light_val_name.lower()}"
+        self._attr_name = f"{self._light_val_name}"
+        self.entity_id = ENTITY_ID_FORMAT.format(f"{coordinator.data.info.name}_{self._light_val_name.lower()}")
         if segment != 0:
             self._attr_name = f"Segment {segment} {self._light_val_name.lower()}"
+            self.entity_id = ENTITY_ID_FORMAT.format(f"{coordinator.data.info.name}_segment_{segment}_{self._light_val_name.lower()}")
 
         self._attr_unique_id = (
             f"{self.coordinator.data.info.mac_address}_{self._segment}_{self._light_val_name.lower()}"
@@ -204,16 +207,6 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
             return False
 
         return super().available
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return the state attributes of the entity."""
-        segment = self.coordinator.data.state.segments[self._segment]
-        return {
-            ATTR_COLOR_PRIMARY: segment.color_primary,
-            ATTR_COLOR_SECONDARY: segment.color_secondary,
-            ATTR_COLOR_TERTIARY: segment.color_tertiary,
-        }
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
