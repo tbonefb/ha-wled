@@ -36,6 +36,3 @@ COLOR_GROUP_TERTIARY = "Color Tertiary descriptors"
 
 # Services
 SERVICE_COLORS= "set_colors"
-
-# Device classes
-DEVICE_CLASS_WLED_LIVE_OVERRIDE: Final = "wled__live_override"
