@@ -162,7 +162,6 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
         self,
         coordinator: WLEDDataUpdateCoordinator,
         segment: int,
-        light_val: int,
     ) -> None:
         """Initialize WLED segment light."""
         super().__init__(coordinator=coordinator)
@@ -170,26 +169,13 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
         self._wv = coordinator.data.info.leds.wv
         self._segment = segment
 
-        if light_val == 2:
-            self._light_val = 2
-            self._light_val_name = "Tertiary"
-        elif light_val == 1:
-            self._light_val = 1
-            self._light_val_name = "Secondary"
-        else:
-            self._light_val = 0
-            self._light_val_name = "Primary"
-
         # Segment 0 uses a simpler name, which is more natural for when using
         # a single segment / using WLED with one big LED strip.
-        self._attr_name = f"{self._light_val_name}"
-        self.entity_id = ENTITY_ID_FORMAT.format(f"{coordinator.data.info.name}_{self._light_val_name.lower()}")
         if segment != 0:
-            self._attr_name = f"Segment {segment} {self._light_val_name.lower()}"
-            self.entity_id = ENTITY_ID_FORMAT.format(f"{coordinator.data.info.name}_segment_{segment}_{self._light_val_name.lower()}")
+            self._attr_name = f"Segment {segment}"
 
         self._attr_unique_id = (
-            f"{self.coordinator.data.info.mac_address}_{self._segment}_{self._light_val_name.lower()}"
+            f"{self.coordinator.data.info.mac_address}_{self._segment}"
         )
 
         self._attr_color_mode = ColorMode.RGB
@@ -209,33 +195,27 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
         return super().available
 
     @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the state attributes of the entity."""
+        segment = self.coordinator.data.state.segments[self._segment]
+        return {
+            ATTR_COLOR_PRIMARY: segment.color_primary,
+            ATTR_COLOR_SECONDARY: segment.color_secondary,
+            ATTR_COLOR_TERTIARY: segment.color_tertiary,
+        }
+
+    @property
     def rgb_color(self) -> tuple[int, int, int] | None:
         """Return the color value."""
-        if self._light_val == 2:
-            return self.coordinator.data.state.segments[self._segment].color_tertiary[:3]
-        if self._light_val == 1:
-            return self.coordinator.data.state.segments[self._segment].color_secondary[:3]
-        else:
-            return self.coordinator.data.state.segments[self._segment].color_primary[:3]
+        return self.coordinator.data.state.segments[self._segment].color_primary[:3]
 
     @property
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
         """Return the color value."""
-        if self._light_val == 2:
-            return cast(
-                tuple[int, int, int, int],
-                self.coordinator.data.state.segments[self._segment].color_tertiary,
-            )
-        if self._light_val == 1:
-            return cast(
-                tuple[int, int, int, int],
-                self.coordinator.data.state.segments[self._segment].color_secondary,
-            )
-        else:
-            return cast(
-                tuple[int, int, int, int],
-                self.coordinator.data.state.segments[self._segment].color_primary,
-            )
+        return cast(
+            tuple[int, int, int, int],
+            self.coordinator.data.state.segments[self._segment].color_primary,
+        )
 
     @property
     def effect(self) -> str | None:
@@ -299,20 +279,10 @@ class WLEDSegmentLight(WLEDEntity, LightEntity):
         }
 
         if ATTR_RGB_COLOR in kwargs:
-            if self._light_val == 2:
-                data[ATTR_COLOR_TERTIARY] = kwargs[ATTR_RGB_COLOR]
-            elif self._light_val == 1:
-                data[ATTR_COLOR_SECONDARY] = kwargs[ATTR_RGB_COLOR]
-            else:
-                data[ATTR_COLOR_PRIMARY] = kwargs[ATTR_RGB_COLOR]
+            data[ATTR_COLOR_PRIMARY] = kwargs[ATTR_RGB_COLOR]
 
         if ATTR_RGBW_COLOR in kwargs:
-            if self._light_val == 2:
-                data[ATTR_COLOR_TERTIARY] = kwargs[ATTR_RGBW_COLOR]
-            elif self._light_val == 1:
-                data[ATTR_COLOR_SECONDARY] = kwargs[ATTR_RGBW_COLOR]
-            else:
-                data[ATTR_COLOR_PRIMARY] = kwargs[ATTR_RGBW_COLOR]
+            data[ATTR_COLOR_PRIMARY] = kwargs[ATTR_RGBW_COLOR]
 
         if ATTR_TRANSITION in kwargs:
             # WLED uses 100ms per unit, so 10 = 1 second.
@@ -389,8 +359,6 @@ def async_update_segments(
     # Process new segments, add them to Home Assistant
     for segment_id in segment_ids - current_ids:
         current_ids.add(segment_id)
-        new_entities.append(WLEDSegmentLight(coordinator, segment_id, 0))
-        new_entities.append(WLEDSegmentLight(coordinator, segment_id, 1))
-        new_entities.append(WLEDSegmentLight(coordinator, segment_id, 2))
+        new_entities.append(WLEDSegmentLight(coordinator, segment_id))
 
     async_add_entities(new_entities)
