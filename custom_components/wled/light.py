@@ -15,7 +15,6 @@ from homeassistant.components.light import (
     ColorMode,
     LightEntity,
     LightEntityFeature,
-    ENTITY_ID_FORMAT,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -32,7 +31,6 @@ from .const import (
     ATTR_ON,
     ATTR_SEGMENT_ID,
     DOMAIN,
-    LOGGER,
     SERVICE_COLORS,
     COLOR_GROUP_PRIMARY,
     COLOR_GROUP_SECONDARY,
